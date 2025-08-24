@@ -3,106 +3,202 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nighty Admin Panel</title>
+<title>FolloLab</title>
 <style>
-body{margin:0;font-family:sans-serif;background:#0b1220;color:#f1f5f9}
-header{background:#111a2b;padding:16px;text-align:center;font-size:22px;font-weight:bold}
-.wrap{max-width:900px;margin:0 auto;padding:20px}
-.card{background:#1e293b;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.4);}
-input,button{padding:10px;border-radius:8px;border:1px solid #223354;background:#1c2b4d;color:#fff;margin:4px 0;width:100%;}
-button{cursor:pointer}
-button:hover{background:#27406d;}
+body {
+  margin:0;
+  font-family:"Segoe UI", sans-serif;
+  background:#0b1220;
+  color:#f1f5f9;
+}
+
+/* Header */
+header {
+  display:flex;
+  justify-content:space-around;
+  padding:14px;
+  background:linear-gradient(90deg,#111a2b,#1e293b);
+  position:sticky;
+  top:0;
+  z-index:100;
+  box-shadow:0 2px 10px rgba(0,0,0,0.6);
+}
+header div {
+  cursor:pointer;
+  padding:10px 16px;
+  border-radius:12px;
+  background:linear-gradient(135deg,#2563eb,#9333ea);
+  color:#fff;
+  font-weight:bold;
+  transition:all 0.3s ease;
+}
+header div:hover {
+  transform:translateY(-2px);
+  opacity:.9;
+}
+
+/* Container */
+.container {
+  padding:20px;
+  max-width:900px;
+  margin:auto;
+}
+
+/* Card */
+.card {
+  background:#1e293b;
+  padding:20px;
+  border-radius:16px;
+  margin-bottom:20px;
+  box-shadow:0 4px 25px rgba(0,0,0,0.45);
+  transition:transform 0.3s ease;
+}
+.card:hover {
+  transform:translateY(-3px);
+}
+
+/* Balance Golden */
+.balance-text {
+  font-size:1.4rem;
+  font-weight:bold;
+  color:#FFD700; /* Gold */
+  text-shadow:0 0 8px rgba(255,215,0,0.6);
+}
+
+/* Buttons */
+button {
+  padding:10px 16px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(135deg,#facc15,#f59e0b);
+  color:#111;
+  font-weight:bold;
+  cursor:pointer;
+  transition:all 0.3s ease;
+}
+button:hover:enabled {
+  transform:scale(1.05);
+}
+button:disabled {
+  background:#555;
+  color:#ccc;
+  cursor:not-allowed;
+}
+
+/* Inputs */
+input,select {
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  width:100%;
+  margin:6px 0;
+}
 </style>
 </head>
 <body>
 
-<header>🛠️ Nighty Admin Panel</header>
-<div class="wrap">
+<header>
+  <div onclick="showBalance()">Balance</div>
+  <div onclick="showJobs()">Jobs</div>
+  <div onclick="showWithdraw()">Withdraw</div>
+  <div onclick="showSupport()">User Support</div>
+</header>
 
-  <div class="card">
-    <h3>Add Job</h3>
-    <input id="jobDesc" placeholder="Job Description"><br>
-    <input id="jobReward" placeholder="Reward ৳"><br>
-    <input id="jobLink" placeholder="Job Link"><br>
-    <button onclick="addJob()">Add Job</button>
-  </div>
-
-  <div class="card">
-    <h3>Jobs List</h3>
-    <div id="jobsList"></div>
-  </div>
-
-  <div class="card">
-    <h3>Withdraw Requests</h3>
-    <div id="withdrawList"></div>
-  </div>
-
-  <div class="card">
-    <h3>User Support Link</h3>
-    <input id="supportLink" placeholder="https://example.com">
-    <button onclick="saveSupportLink()">Save Support Link</button>
-  </div>
-
-</div>
+<div class="container" id="mainContent"></div>
 
 <script>
+let balance = 0; // শুরুর ব্যালেন্স ০ টাকা থাকবে
+let completedTasks = JSON.parse(localStorage.getItem("completedTasks")||"[]");
 let tasks = JSON.parse(localStorage.getItem("tasks")||"[]");
 let withdrawRequests = JSON.parse(localStorage.getItem("withdrawRequests")||"[]");
+let supportLink = localStorage.getItem("supportLink")||"#";
 
-// --- Jobs ---
-function renderJobs(){
-  document.getElementById("jobsList").innerHTML = tasks.map((t,i)=>`<div class="card">
-    ${t.desc} - ${t.reward} ৳<br>
-    <button onclick="deleteJob(${i})">Delete</button>
-  </div>`).join("");
-  localStorage.setItem("tasks", JSON.stringify(tasks));
+// Balance
+function showBalance(){
+  mainContent.innerHTML = `
+    <div class="card">
+      <h3 class="balance-text">Balance: ${balance} ৳</h3>
+    </div>`;
 }
-function addJob(){
-  let desc = document.getElementById("jobDesc").value;
-  let reward = Number(document.getElementById("jobReward").value);
-  let link = document.getElementById("jobLink").value;
-  if(!desc||!reward||!link){alert("সব ঘর পূরণ করুন"); return;}
-  tasks.push({id:Date.now(), desc, reward, link});
-  renderJobs();
-  document.getElementById("jobDesc").value="";
-  document.getElementById("jobReward").value="";
-  document.getElementById("jobLink").value="";
-}
-function deleteJob(i){if(confirm("Delete this job?")){tasks.splice(i,1);renderJobs();}}
 
-// --- Withdraw ---
-function renderWithdraw(){
-  document.getElementById("withdrawList").innerHTML = withdrawRequests.map((w,i)=>`<div class="card">
-    ${w.type} - ${w.number} - ${w.amount} ৳ - ${w.status}
-    <button onclick="approveWithdraw(${i})">Ok</button>
-    <button onclick="rejectWithdraw(${i})">No</button>
-  </div>`).join("");
+// Jobs
+function showJobs(){
+  if(tasks.length===0){
+    mainContent.innerHTML="<div class='card'>কোনো কাজ নেই</div>"; 
+    return;
+  }
+  mainContent.innerHTML = tasks.map(task=>{
+    let done = completedTasks.includes(task.id);
+    return `<div class="card">
+      <h3>${task.desc}</h3>
+      <p>Reward: ${task.reward} ৳</p>
+      <button onclick="startTask(${task.id})" ${done?"disabled":""}>
+        ${done?"Completed":"Start Task"}
+      </button>
+    </div>`;
+  }).join("");
+}
+
+// Start Task
+function startTask(taskId){
+  if(completedTasks.includes(taskId)){ alert("এই কাজ আগেই করা হয়েছে"); return;}
+  let task = tasks.find(t=>t.id===taskId);
+  if(!task) return;
+  window.open(task.link,"_blank");
+  setTimeout(()=>{
+    if(confirm("আপনি কি কাজ শেষ করেছেন?")){
+      completedTasks.push(taskId);
+      balance += Number(task.reward);
+      localStorage.setItem("balance", balance);
+      localStorage.setItem("completedTasks", JSON.stringify(completedTasks));
+      alert(`${task.reward} টাকা ব্যালেন্সে যোগ হয়েছে`);
+      showBalance(); showJobs();
+    }
+  },5000);
+}
+
+// Withdraw
+function showWithdraw(){
+  mainContent.innerHTML = `<div class="card">
+    <h3>Withdraw Request</h3>
+    <select id="wdMethod">
+      <option value="">--নগদ/বিকাশ নির্বাচন করুন--</option>
+      <option value="Nagad">নগদ</option>
+      <option value="Bkash">বিকাশ</option>
+    </select><br>
+    <input type="text" id="wdNumber" placeholder="নাম্বার"><br>
+    <input type="number" id="wdAmount" placeholder="Amount (Min 100)"><br>
+    <button onclick="submitWithdraw()">Submit Withdraw</button>
+  </div>`;
+}
+
+function submitWithdraw(){
+  let method = document.getElementById("wdMethod").value;
+  let num = document.getElementById("wdNumber").value;
+  let amt = parseInt(document.getElementById("wdAmount").value);
+  if(!method){alert("নগদ/বিকাশ নির্বাচন করুন"); return;}
+  if(!num || !amt){alert("সব ঘর পূরণ করুন"); return;}
+  if(amt < 100){alert("Minimum 100 টাকা Withdraw করতে হবে"); return;}
+  if(amt>balance){alert("আপনার ব্যালেন্স যথেষ্ট নেই"); return;}
+  
+  withdrawRequests.push({method:method, number:num, amount:amt, status:"pending"});
   localStorage.setItem("withdrawRequests", JSON.stringify(withdrawRequests));
+  balance -= amt; 
+  localStorage.setItem("balance", balance);
+  alert("Withdraw Request পাঠানো হয়েছে");
+  showBalance();
 }
 
-function approveWithdraw(i){
-  withdrawRequests[i].status="approved";
-  withdrawRequests.splice(i,1);
-  renderWithdraw();
-}
-function rejectWithdraw(i){
-  let balStored = localStorage.getItem("balance");
-  let bal = balStored && !isNaN(parseInt(balStored)) ? parseInt(balStored) : 0;
-  bal += withdrawRequests[i].amount;
-  localStorage.setItem("balance", bal);
-  withdrawRequests[i].status="rejected";
-  withdrawRequests.splice(i,1);
-  renderWithdraw();
+// User Support
+function showSupport(){
+  mainContent.innerHTML = `<div class="card">
+    <h3>User Support</h3>
+    <a href="${supportLink}" target="_blank">Click Here for Support</a>
+  </div>`;
 }
 
-// --- User Support ---
-function saveSupportLink(){
-  let link = document.getElementById("supportLink").value;
-  localStorage.setItem("supportLink", link);
-}
-
-renderJobs();
-renderWithdraw();
+// Default View
+showBalance();
 </script>
 
 </body>
