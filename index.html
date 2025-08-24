@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nighty Admin Panel</title>
+<style>
+body{margin:0;font-family:sans-serif;background:#0b1220;color:#f1f5f9}
+header{background:#111a2b;padding:16px;text-align:center;font-size:22px;font-weight:bold}
+.wrap{max-width:900px;margin:0 auto;padding:20px}
+.card{background:#1e293b;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.4);}
+input,button{padding:10px;border-radius:8px;border:1px solid #223354;background:#1c2b4d;color:#fff;margin:4px 0;width:100%;}
+button{cursor:pointer}
+button:hover{background:#27406d;}
+</style>
+</head>
+<body>
+
+<header>🛠️ Nighty Admin Panel</header>
+<div class="wrap">
+
+  <div class="card">
+    <h3>Add Job</h3>
+    <input id="jobDesc" placeholder="Job Description"><br>
+    <input id="jobReward" placeholder="Reward ৳"><br>
+    <input id="jobLink" placeholder="Job Link"><br>
+    <button onclick="addJob()">Add Job</button>
+  </div>
+
+  <div class="card">
+    <h3>Jobs List</h3>
+    <div id="jobsList"></div>
+  </div>
+
+  <div class="card">
+    <h3>Withdraw Requests</h3>
+    <div id="withdrawList"></div>
+  </div>
+
+  <div class="card">
+    <h3>User Support Link</h3>
+    <input id="supportLink" placeholder="https://example.com">
+    <button onclick="saveSupportLink()">Save Support Link</button>
+  </div>
+
+</div>
+
+<script>
+let tasks = JSON.parse(localStorage.getItem("tasks")||"[]");
+let withdrawRequests = JSON.parse(localStorage.getItem("withdrawRequests")||"[]");
+
+// --- Jobs ---
+function renderJobs(){
+  document.getElementById("jobsList").innerHTML = tasks.map((t,i)=>`<div class="card">
+    ${t.desc} - ${t.reward} ৳<br>
+    <button onclick="deleteJob(${i})">Delete</button>
+  </div>`).join("");
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+function addJob(){
+  let desc = document.getElementById("jobDesc").value;
+  let reward = Number(document.getElementById("jobReward").value);
+  let link = document.getElementById("jobLink").value;
+  if(!desc||!reward||!link){alert("সব ঘর পূরণ করুন"); return;}
+  tasks.push({id:Date.now(), desc, reward, link});
+  renderJobs();
+  document.getElementById("jobDesc").value="";
+  document.getElementById("jobReward").value="";
+  document.getElementById("jobLink").value="";
+}
+function deleteJob(i){if(confirm("Delete this job?")){tasks.splice(i,1);renderJobs();}}
+
+// --- Withdraw ---
+function renderWithdraw(){
+  document.getElementById("withdrawList").innerHTML = withdrawRequests.map((w,i)=>`<div class="card">
+    ${w.type} - ${w.number} - ${w.amount} ৳ - ${w.status}
+    <button onclick="approveWithdraw(${i})">Ok</button>
+    <button onclick="rejectWithdraw(${i})">No</button>
+  </div>`).join("");
+  localStorage.setItem("withdrawRequests", JSON.stringify(withdrawRequests));
+}
+
+function approveWithdraw(i){
+  withdrawRequests[i].status="approved";
+  withdrawRequests.splice(i,1);
+  renderWithdraw();
+}
+function rejectWithdraw(i){
+  let balStored = localStorage.getItem("balance");
+  let bal = balStored && !isNaN(parseInt(balStored)) ? parseInt(balStored) : 0;
+  bal += withdrawRequests[i].amount;
+  localStorage.setItem("balance", bal);
+  withdrawRequests[i].status="rejected";
+  withdrawRequests.splice(i,1);
+  renderWithdraw();
+}
+
+// --- User Support ---
+function saveSupportLink(){
+  let link = document.getElementById("supportLink").value;
+  localStorage.setItem("supportLink", link);
+}
+
+renderJobs();
+renderWithdraw();
+</script>
+
+</body>
+</html>
